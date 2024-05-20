@@ -1,26 +1,32 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { createContext, useState } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Lading from "./pages/lading/Lading";
+import Logins from "./pages/login/Logins";
+import { uuid } from "uuidv4";
+import Token from "./pages/login/token/Token";
+import Figma from "./pages/figma/Figma";
 
-function App() {
+export const userToken = createContext<any>(null);
+
+const App = () => {
+  const [token, setToken] = useState<any>(null);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <userToken.Provider
+        value={{
+          token,
+          setToken,
+        }}
+      >
+        <Routes>
+          <Route path="/" element={<Lading />} />
+          <Route path="/oauth/token" element={<Token />} />
+          <Route path="/login" element={<Logins />} />
+          <Route path="/:fileKey" element={<Figma />} />
+        </Routes>
+      </userToken.Provider>
+    </BrowserRouter>
   );
-}
+};
 
 export default App;
