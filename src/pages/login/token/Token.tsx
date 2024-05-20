@@ -13,9 +13,9 @@ const Token = () => {
   const code = searchParams.get("code");
 
   const getAuth = async () => {
-    const client_id = "BZJc0SEHkwOU7UErsVhyrA";
-    const client_secret = "OxAtlMz1Kf7iMCd1gZLWrKn3KtkAqX";
-    const redirect_uri = "http://localhost:3000/oauth/token";
+    const client_id = process.env.REACT_APP_CLIENT_ID;
+    const client_secret = process.env.REACT_APP_CLIENT_SECRET;
+    const redirect_uri = process.env.REACT_APP_R_URL;
     const grant_type = "authorization_code";
     const p = {
       client_id,
