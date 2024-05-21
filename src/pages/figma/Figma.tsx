@@ -78,7 +78,11 @@ const Figma = () => {
 
     getDatas();
   }, []);
-  return <div>{data && <Canvas data={data} />}</div>;
+  return (
+    <div style={{ width: "100dvw", height: "100dvh", overflow: "hidden" }}>
+      {data && <Canvas data={data} imgsData={imgsData} />}
+    </div>
+  );
 };
 
 export default Figma;
