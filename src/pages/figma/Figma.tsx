@@ -65,6 +65,7 @@ const Figma = () => {
         getImgs(),
         getNodes(),
       ]);
+      console.log(file);
       setData(file.data);
       setImgsData(imgs.data.meta.images);
     } catch (e) {
