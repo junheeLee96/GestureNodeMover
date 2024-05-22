@@ -31,80 +31,138 @@ export const drawRectangle = ({ child, ctx, imgStore, imgsData }: any) => {
   }
 
   if (child.fills.length > 0 && child.fills[0].imageRef) {
-    drawImage(child, ctx, imgStore, imgsData);
-  }
-
-  return;
-  if (child.fills.length > 0) {
-    if (child.fills[0].color) {
-      ctx.fillStyle = `rgba(${child.fills[0].color.r * 255}, ${
-        child.fills[0].color.g * 255
-      }, ${child.fills[0].color.b * 255},${child.fills[0].color.a})`;
-    }
-    // if (child.fills[0].gradientHandlePositions) {
-    //   const gradientHandles = child.fills[0].gradientHandlePositions;
-    //   const gradientStops = child.fills[0].gradientStops;
-    //   const gradient = ctx.createLinearGradient(
-    //     x + gradientHandles[0].x * width,
-    //     y + gradientHandles[0].y * height,
-    //     x + gradientHandles[1].x * width,
-    //     y + gradientHandles[1].y * height
-    //   );
-
-    //   gradientStops.forEach((stop: any) => {
-    //     const color = stop.color;
-    //     const rgbaColor = `rgba(${color.r * 255}, ${color.g * 255}, ${
-    //       color.b * 255
-    //     }, ${color.a})`;
-    //     gradient.addColorStop(stop.position, rgbaColor);
-    //   });
-
-    //   if (child.cornerRadius) {
-    //     const { cornerRadius } = child;
-    //     ctx.beginPath();
-    //     ctx.moveTo(x + cornerRadius, y);
-    //     ctx.lineTo(x + width - cornerRadius, y);
-    //     ctx.quadraticCurveTo(x + width, y, x + width, y + cornerRadius);
-    //     ctx.lineTo(x + width, y + height - cornerRadius);
-    //     ctx.quadraticCurveTo(
-    //       x + width,
-    //       y + height,
-    //       x + width - cornerRadius,
-    //       y + height
-    //     );
-    //     ctx.lineTo(x + cornerRadius, y + height);
-    //     ctx.quadraticCurveTo(x, y + height, x, y + height - cornerRadius);
-    //     ctx.lineTo(x, y + cornerRadius);
-    //     ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
-    //     ctx.closePath();
-    //   } else {
-    //   }
-    // }
+    drawImage(child, ctx, imgStore, imgsData, "rect");
   }
 };
 
-export const drawImage = (
-  child: any,
-  ctx: any,
-  imgStore: any,
-  imgsData: any
-) => {
-  if (!ctx) return;
-  const imageRef = child.fills[0].imageRef;
+const drawRectImage = ({ ctx, child, imgStore, imageRef, imgsData }: any) => {
   const { x, y, width, height } = child.absoluteBoundingBox;
-
   if (imgStore.hasOwnProperty(imageRef)) {
     const img = imgStore[imageRef];
     ctx.drawImage(img, x, y, width, height);
   } else {
     const img = new Image();
-    img.src = imgsData[child.fills[0].imageRef];
+    img.src = imgsData[imageRef];
     imgStore[imageRef] = img;
     img.onload = () => {
       if (ctx) {
         ctx.drawImage(img, x, y, width, height);
       }
     };
+  }
+};
+
+const drawArcImage = ({
+  ctx,
+  centerX,
+  centerY,
+  radiusX,
+  radiusY,
+  width,
+  height,
+  img,
+}: any) => {
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+  ctx.clip();
+
+  // 이미지를 원 안에 맞춰 비율을 유지하면서 꽉 채우기
+  const imgAspectRatio = img.width / img.height;
+  const ellipseAspectRatio = width / height;
+
+  let drawWidth, drawHeight;
+  let offsetX, offsetY;
+
+  if (imgAspectRatio > ellipseAspectRatio) {
+    // 이미지가 더 넓은 경우, 높이를 기준으로 맞춤
+    drawHeight = height;
+    drawWidth = drawHeight * imgAspectRatio;
+    offsetX = (drawWidth - width) / 2;
+    offsetY = 0;
+  } else {
+    // 이미지가 더 높은 경우, 너비를 기준으로 맞춤
+    drawWidth = width;
+    drawHeight = drawWidth / imgAspectRatio;
+    offsetX = 0;
+    offsetY = (drawHeight - height) / 2;
+  }
+
+  // drawImage로 이미지 비율을 유지하면서 원을 꽉 채우기
+  ctx.drawImage(
+    img,
+    centerX - radiusX - offsetX,
+    centerY - radiusY - offsetY,
+    drawWidth,
+    drawHeight
+  );
+
+  ctx.restore();
+
+  // 선택적으로 원의 테두리 그리기
+  ctx.beginPath();
+  ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+};
+
+export const drawImage = (
+  child: any,
+  ctx: any,
+  imgStore: any,
+  imgsData: any,
+  figure?: string
+) => {
+  if (!ctx) return;
+  const imageRef = child.fills[0].imageRef;
+
+  if (figure === "rect") {
+    drawRectImage({ ctx, child, imgStore, imageRef, imgsData });
+  } else if (figure === "arc") {
+    const { x, y, width, height } = child.absoluteBoundingBox;
+
+    const radiusX = width / 2;
+    const radiusY = height / 2;
+    const centerX = x + radiusX;
+    const centerY = y + radiusY;
+    // return;
+    const obj = { ...imgStore.current };
+    const img = obj[child.fills[0].imageRef];
+    if (obj.hasOwnProperty(child.fills[0].imageRef)) {
+      // 원형 클리핑 경로 설정
+      // arcImg({ ctx, centerX, centerY, radiusX, radiusY, width, height, img });
+      drawArcImage({
+        ctx,
+        centerX,
+        centerY,
+        radiusX,
+        radiusY,
+        width,
+        height,
+        img,
+      });
+    } else {
+      const img = new Image();
+      const url = imgsData[child.fills[0].imageRef];
+      img.src = url;
+      imgStore.current = {
+        ...imgStore.current,
+        [child.fills[0].imageRef]: img,
+      };
+      img.onload = () => {
+        drawArcImage({
+          ctx,
+          centerX,
+          centerY,
+          radiusX,
+          radiusY,
+          width,
+          height,
+          img,
+        });
+      };
+    }
   }
 };
 
@@ -119,7 +177,7 @@ export const drawStroke = (info: Paint, strokeWeight: number, ctx: any) => {
 };
 
 export const drawText = ({ child, ctx, imgStore, imgsData }: any) => {
-  let { x, y, width, height } = child.absoluteBoundingBox;
+  let { x, y } = child.absoluteBoundingBox;
   const { r, g, b, a } = child.fills[0].color;
   ctx.fillStyle = `rgba(${Math.round(r * 255)}, ${Math.round(
     g * 255
@@ -138,19 +196,6 @@ export const drawText = ({ child, ctx, imgStore, imgsData }: any) => {
     default:
       break;
   }
-
-  // switch (style.textAlignVertical) {
-  //   case "CENTER":
-  //     // y += height / 2 + 5;
-  //     break;
-
-  //   case "BOTTOM":
-  //     // y += height;
-  //     break;
-
-  //   default:
-  //     break;
-  // }
 
   switch (style.textAlignHorizontal) {
     case "LEFT":
@@ -174,4 +219,10 @@ export const drawText = ({ child, ctx, imgStore, imgsData }: any) => {
   }
   ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
   ctx.fillText(text, x, y);
+};
+
+export const drawEllipse = ({ child, ctx, imgStore, imgsData }: any) => {
+  if (child.fills.length > 0 && child.fills[0].imageRef) {
+    drawImage(child, ctx, imgStore, imgsData, "arc");
+  }
 };

@@ -1,6 +1,6 @@
 import { Paint, Rectangle } from "figma-api";
 import React, { useEffect, useRef } from "react";
-import { drawRectangle, drawText } from "../utils/draw";
+import { drawEllipse, drawRectangle, drawText } from "../utils/draw";
 
 const maxZoom = 5;
 const minZoom = 0.01;
@@ -24,7 +24,7 @@ const Canvas = ({ data, imgsData }: any) => {
     if (!ctxRef.current) return;
     ctxRef.current.closePath();
     ctxRef.current.beginPath();
-    if (child.characters === "q") {
+    if (child.name === "Keys" || child.name === "Lowercase") {
       console.log(child);
     }
     const { type } = child;
@@ -45,6 +45,37 @@ const Canvas = ({ data, imgsData }: any) => {
           imgStore: imgStore.current,
           imgsData: imgsData,
         });
+        break;
+
+      case "FRAME":
+        if (child.fills.length > 0 && child.fills[0].color) {
+          drawRectangle({
+            child,
+            ctx: ctxRef.current,
+            imgStore: imgStore.current,
+            imgsData: imgsData,
+          });
+        }
+        break;
+
+      case "ELLIPSE":
+        drawEllipse({
+          ctx: ctxRef.current,
+          child,
+          imgStore: imgStore.current,
+          imgsData: imgsData,
+        });
+        break;
+
+      case "GROUP":
+        if (child.fills.length > 0 && child.fills[0].color) {
+          const { r, g, b, a } = child.fills[0].color;
+          const { x, y, width, height } = child.absoluteBoundingBox;
+          ctxRef.current.fillStyle = `rgba(${r * 255},${g * 255},${
+            b * 255
+          },${a})`;
+          ctxRef.current.fillRect(x, y, width, height);
+        }
         break;
 
       //   case "FRAME":
