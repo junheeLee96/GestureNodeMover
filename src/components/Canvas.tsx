@@ -1,6 +1,11 @@
 import { Paint, Rectangle } from "figma-api";
 import React, { useEffect, useRef } from "react";
-import { drawEllipse, drawRectangle, drawText } from "../utils/draw";
+import {
+  drawEllipse,
+  drawRectangle,
+  drawText,
+  drawVector,
+} from "../utils/draw";
 
 const maxZoom = 5;
 const minZoom = 0.01;
@@ -24,8 +29,9 @@ const Canvas = ({ data, imgsData }: any) => {
     if (!ctxRef.current) return;
     ctxRef.current.closePath();
     ctxRef.current.beginPath();
-    if (child.name === "Keys" || child.name === "Lowercase") {
-      console.log(child);
+
+    if (!child.absoluteRenderBounds) {
+      return;
     }
     const { type } = child;
     switch (type) {
@@ -49,6 +55,10 @@ const Canvas = ({ data, imgsData }: any) => {
 
       case "FRAME":
         if (child.fills.length > 0 && child.fills[0].color) {
+          const { x, y } = child.absoluteRenderBounds;
+          ctxRef.current.fillStyle = "rgb(77,77,77)";
+          ctxRef.current.fillText(child.name, x, y - 110);
+
           drawRectangle({
             child,
             ctx: ctxRef.current,
@@ -68,41 +78,38 @@ const Canvas = ({ data, imgsData }: any) => {
         break;
 
       case "GROUP":
-        if (child.fills.length > 0 && child.fills[0].color) {
-          const { r, g, b, a } = child.fills[0].color;
-          const { x, y, width, height } = child.absoluteBoundingBox;
-          ctxRef.current.fillStyle = `rgba(${r * 255},${g * 255},${
-            b * 255
-          },${a})`;
-          ctxRef.current.fillRect(x, y, width, height);
+        if (
+          child.fills.length > 0 &&
+          child.fills[0].color &&
+          child.absoluteRenderBounds
+        ) {
+          drawRectangle({
+            child,
+            ctx: ctxRef.current,
+            imgStore: imgStore.current,
+            imgsData: imgsData,
+          });
         }
         break;
 
-      //   case "FRAME":
-      //     drawFrame({ canvas: ref.current, ctx: ctxRef.current, child });
-      //     return;
+      case "SECTION":
+        if (child.fills.length > 0 && child.fills[0].color) {
+          drawRectangle({
+            child,
+            ctx: ctxRef.current,
+            imgStore: imgStore.current,
+            imgsData: imgsData,
+          });
+        }
+        break;
 
-      //   case "STAR":
-      //     return;
-      //   case "ELLIPSE":
-      //     drawEllipse({ ctx: ctxRef.current, child });
-      //     return;
-      //   case "TEXT":
-      //     drawText({ ctx: ctxRef.current, child });
-      //     return;
-      //   case "INSTANCE":
-      //     drawInstance({ ctx: ctxRef.current, child });
-      //     return;
-      //   case "VECTOR":
-      //     drawVector({ ctx: ctxRef.current, child });
-      //     return;
-      //   case "BOOLEAN_OPERATION":
-      //     drawBoolOper({ ctx: ctxRef.current, child });
-      //     return;
+      case "VECTOR":
+        break;
+
       default:
         break;
     }
-    if (child.children) {
+    if (child.children && child.absoluteRenderBounds) {
       child.children.forEach(drawFigure);
     }
   };
@@ -120,7 +127,8 @@ const Canvas = ({ data, imgsData }: any) => {
     );
 
     ctxRef.current.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    const arr = data.document;
+    let arr = data.document;
+    arr = arr.children[0];
     arr.children.forEach(drawFigure);
     // requestAnimationFrame(drawStart);
   };
@@ -134,7 +142,7 @@ const Canvas = ({ data, imgsData }: any) => {
       y: cameraOffsetRef.current.y - e.deltaY * scrollSensitivity,
     };
 
-    drawStart();
+    // drawStart();
   };
 
   const adjustZoom = (zoomAmount: any, zoomFactor: any) => {
@@ -168,7 +176,7 @@ const Canvas = ({ data, imgsData }: any) => {
     <canvas
       ref={ref}
       style={{
-        background: "#111",
+        background: "yellowgreen",
         width: "100dvw",
         height: "100dvh",
         overflow: "hidden",
