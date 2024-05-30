@@ -1,7 +1,6 @@
-import { useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { userToken } from "../../App";
-import Canvas from "../../components/Canvas";
 import {
   GetFileNodesResult,
   GetFileResult,
@@ -13,6 +12,12 @@ import Three from "./webGL/Three";
 import Pixi from "./pixi/Pixi";
 // import { Canvas } from "@react-three/fiber";
 // import { getFile, getImgs, getNodes } from "../../utils/fetchAPI";
+
+interface ImgsDataCtxType {
+  imgsData: GetImageResult | null;
+}
+
+export const ImgsDataCtx = createContext<ImgsDataCtxType | null>(null);
 
 const Figma = () => {
   const { user } = useContext(userToken);
@@ -62,8 +67,10 @@ const Figma = () => {
 
   const getDatas = async () => {
     try {
+      // await Promise.all([getFile(), getImgs()]).then(callSuccess);
       const [file, imgs]: any = await Promise.all([getFile(), getImgs()]);
-
+      console.log(file);
+      // return;
       setData(file.data);
       setImgsData(imgs.data.meta.images);
     } catch (e) {
@@ -79,12 +86,26 @@ const Figma = () => {
   }, []);
   return (
     <div style={{ width: "100dvw", height: "100dvh", overflow: "hidden" }}>
-      <Pixi />
-      {/* <WebGL /> */}
-      {/* <Three /> */}
-      {/* {data && <Canvas data={data} imgsData={imgsData} />} */}
+      <ImgsDataCtx.Provider value={{ imgsData }}>
+        {/* <Child num={3} /> */}
+        {data && data.document.children.length > 0 && (
+          <Pixi data={data.document.children[0]} imgsData={imgsData} />
+        )}
+        {/* <WebGL /> */}
+        {/* <Three /> */}
+        {/* {data && <Canvas data={data} imgsData={imgsData} />} */}
+      </ImgsDataCtx.Provider>
     </div>
   );
 };
 
 export default Figma;
+
+// const Child = ({ num }: { num: number }) => {
+//   return (
+//     <div>
+//       NUM : {num}
+//       {num > 0 ? <Child num={num - 1} /> : null}
+//     </div>
+//   );
+// };

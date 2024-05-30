@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { Stage, Container, Graphics } from "@pixi/react";
-const Pixi = () => {
+const Pixi = ({ data, imgsData }: any) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -69,13 +69,23 @@ const Pixi = () => {
     g.drawRect(0, 0, 100, 100);
     g.endFill();
   };
+  const drawSquare2 = (g: PIXI.Graphics) => {
+    g.clear();
+    g.beginFill("red");
+    g.drawRect(100, 100, 100, 100);
+    g.endFill();
+  };
 
   return (
     <div ref={canvasRef} style={{ width: "100vw", height: "100vh" }}>
       <Stage
         width={window.innerWidth}
         height={window.innerHeight}
-        options={{ backgroundColor: 0x1099bb }}
+        options={{
+          backgroundColor: data.backgroundColor
+            ? `rgba(${data.backgroundColor.r} ,${data.backgroundColor.g} ,${data.backgroundColor.b} ,${data.backgroundColor.a})`
+            : "none",
+        }}
       >
         <Container ref={viewportRef}>
           <Graphics
@@ -83,6 +93,13 @@ const Pixi = () => {
             x={window.innerWidth / 2}
             y={window.innerHeight / 2}
           />
+          <Container ref={viewportRef}>
+            <Graphics
+              draw={drawSquare2}
+              x={window.innerWidth / 2}
+              y={window.innerHeight / 2}
+            />
+          </Container>
         </Container>
       </Stage>
     </div>
