@@ -10,11 +10,13 @@ import axios from "axios";
 import WebGL from "./webGL/WebGL";
 import Three from "./webGL/Three";
 import Pixi from "./pixi/Pixi";
+import { Info_figma, Info_img } from "./Figmadata";
 // import { Canvas } from "@react-three/fiber";
 // import { getFile, getImgs, getNodes } from "../../utils/fetchAPI";
 
 interface ImgsDataCtxType {
-  imgsData: GetImageResult | null;
+  imgsData: any; // imgsData의 실제 타입으로 변경하세요
+  setImgsData: React.SetStateAction<any>;
 }
 
 export const ImgsDataCtx = createContext<ImgsDataCtxType | null>(null);
@@ -69,7 +71,8 @@ const Figma = () => {
     try {
       // await Promise.all([getFile(), getImgs()]).then(callSuccess);
       const [file, imgs]: any = await Promise.all([getFile(), getImgs()]);
-      console.log(file);
+      console.log(JSON.stringify(imgs.data.meta.images));
+      console.log(imgs);
       // return;
       setData(file.data);
       setImgsData(imgs.data.meta.images);
@@ -81,14 +84,30 @@ const Figma = () => {
   useEffect(() => {
     const key = params.fileKey;
     console.log(key);
+    const figmaInfo: any = Info_figma;
+    const imgData = Info_img;
+    setTimeout(() => {
+      setImgsData(imgData);
+      setData(figmaInfo);
+    }, 300);
 
+    return;
     getDatas();
   }, []);
+
+  useEffect(() => {
+    console.log(imgsData);
+  }, [imgsData]);
   return (
     <div style={{ width: "100dvw", height: "100dvh", overflow: "hidden" }}>
-      <ImgsDataCtx.Provider value={{ imgsData }}>
+      <ImgsDataCtx.Provider
+        value={{
+          imgsData,
+          setImgsData,
+        }}
+      >
         {/* <Child num={3} /> */}
-        {data && data.document.children.length > 0 && (
+        {data && data.document.children.length > 0 && imgsData && (
           <Pixi data={data.document.children[0]} imgsData={imgsData} />
         )}
         {/* <WebGL /> */}

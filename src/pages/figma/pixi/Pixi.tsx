@@ -1,42 +1,73 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  createContext,
+  useContext,
+} from "react";
 import * as PIXI from "pixi.js";
 import { Stage, Container, Graphics } from "@pixi/react";
+import Child from "./Child";
+import { ImgsDataCtx } from "../Figma";
+
+interface DrawFigureContextType {
+  drawFigure: (g: PIXI.Graphics, child: any) => void;
+}
+
+// 기본 값을 null로 설정
+export const drawFigureCtx = createContext<DrawFigureContextType | null>(null);
+
 const Pixi = ({ data, imgsData }: any) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+
   const viewportRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({
+  const draggingRef = useRef<any>({
     x: 0,
     y: 0,
   });
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (viewportRef.current) {
-        e.preventDefault();
-        const zoomFactor = 1 + e.deltaY * -0.001;
+      e.preventDefault();
+      if (!viewportRef.current) return;
+      if (e.ctrlKey) {
+        const zoomFactor = 1 + e.deltaY * -0.005;
         viewportRef.current.scale.x *= zoomFactor;
         viewportRef.current.scale.y *= zoomFactor;
+      } else {
+        console.log(
+          viewportRef.current.position.x,
+          viewportRef.current.position.y
+        );
+        viewportRef.current.position.x -= e.deltaX;
+        viewportRef.current.position.y -= e.deltaY;
       }
+      // if (viewportRef.current) {
+      //   e.preventDefault();
+      //   const zoomFactor = 1 + e.deltaY * -0.001;
+      //   viewportRef.current.scale.x *= zoomFactor;
+      //   viewportRef.current.scale.y *= zoomFactor;
+      // }
     };
 
     const handleMouseDown = (e: MouseEvent) => {
       if (viewportRef.current) {
         setIsDragging(true);
-        setDragStart({
-          x: e.clientX - viewportRef.current.position.x,
-          y: e.clientY - viewportRef.current.position.y,
-        });
+        // setDragStart({
+        //   x: e.clientX - viewportRef.current.position.x,
+        //   y: e.clientY - viewportRef.current.position.y,
+        // });
       }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && viewportRef.current) {
-        viewportRef.current.position.set(
-          e.clientX - dragStart.x,
-          e.clientY - dragStart.y
-        );
-      }
+      // if (isDragging && viewportRef.current) {
+      //   viewportRef.current.position.set(
+      //     e.clientX - dragStart.x,
+      //     e.clientY - dragStart.y
+      //   );
+      // }
     };
 
     const handleMouseUp = () => {
@@ -46,22 +77,22 @@ const Pixi = ({ data, imgsData }: any) => {
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.addEventListener("wheel", handleWheel, { passive: false });
-      canvas.addEventListener("mousedown", handleMouseDown);
-      canvas.addEventListener("mousemove", handleMouseMove);
-      canvas.addEventListener("mouseup", handleMouseUp);
-      canvas.addEventListener("mouseleave", handleMouseUp);
+      // canvas.addEventListener("mousedown", handleMouseDown);
+      // canvas.addEventListener("mousemove", handleMouseMove);
+      // canvas.addEventListener("mouseup", handleMouseUp);
+      // canvas.addEventListener("mouseleave", handleMouseUp);
     }
 
     return () => {
       if (canvas) {
         canvas.removeEventListener("wheel", handleWheel);
-        canvas.removeEventListener("mousedown", handleMouseDown);
-        canvas.removeEventListener("mousemove", handleMouseMove);
-        canvas.removeEventListener("mouseup", handleMouseUp);
-        canvas.removeEventListener("mouseleave", handleMouseUp);
+        // canvas.removeEventListener("mousedown", handleMouseDown);
+        // canvas.removeEventListener("mousemove", handleMouseMove);
+        // canvas.removeEventListener("mouseup", handleMouseUp);
+        // canvas.removeEventListener("mouseleave", handleMouseUp);
       }
     };
-  }, [isDragging, dragStart]);
+  }, []);
 
   const drawSquare = (g: PIXI.Graphics) => {
     g.clear();
@@ -83,23 +114,23 @@ const Pixi = ({ data, imgsData }: any) => {
         height={window.innerHeight}
         options={{
           backgroundColor: data.backgroundColor
-            ? `rgba(${data.backgroundColor.r} ,${data.backgroundColor.g} ,${data.backgroundColor.b} ,${data.backgroundColor.a})`
-            : "none",
+            ? `rgba(${data.backgroundColor.r * 255} ,${
+                data.backgroundColor.g * 255
+              } ,${data.backgroundColor.b * 255} ,${data.backgroundColor.a})`
+            : "#FFFF",
         }}
       >
         <Container ref={viewportRef}>
-          <Graphics
-            draw={drawSquare}
-            x={window.innerWidth / 2}
-            y={window.innerHeight / 2}
-          />
-          <Container ref={viewportRef}>
-            <Graphics
-              draw={drawSquare2}
-              x={window.innerWidth / 2}
-              y={window.innerHeight / 2}
+          {data.children.map((child: any, idx: number) => (
+            <Child
+              child={child}
+              key={idx}
+              imgsData={imgsData}
+              backgroundColor={`rgba(${data.backgroundColor.r * 255} ,${
+                data.backgroundColor.g * 255
+              } ,${data.backgroundColor.b * 255} ,${data.backgroundColor.a})`}
             />
-          </Container>
+          ))}
         </Container>
       </Stage>
     </div>

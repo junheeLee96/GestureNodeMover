@@ -1,11 +1,10 @@
 import { Paint, Rectangle } from "figma-api";
 import React, { useEffect, useRef } from "react";
-import {
-  drawEllipse,
-  drawRectangle,
-  drawText,
-  drawVector,
-} from "../utils/draw";
+// import // drawEllipse,
+// // drawRectangle,
+// // drawText,
+// // drawVector,
+// "../utils/draw";
 
 const maxZoom = 5;
 const minZoom = 0.01;
@@ -26,92 +25,94 @@ const Canvas = ({ data, imgsData }: any) => {
   const imgStore = useRef<any>({});
 
   const drawFigure = (child: any) => {
-    if (!ctxRef.current) return;
-    ctxRef.current.closePath();
-    ctxRef.current.beginPath();
+    return;
 
-    if (!child.absoluteRenderBounds) {
-      return;
-    }
-    const { type } = child;
-    switch (type) {
-      case "RECTANGLE":
-        drawRectangle({
-          child,
-          ctx: ctxRef.current,
-          imgStore: imgStore.current,
-          imgsData: imgsData,
-        });
-        break;
+    // if (!ctxRef.current) return;
+    // ctxRef.current.closePath();
+    // ctxRef.current.beginPath();
 
-      case "TEXT":
-        drawText({
-          child,
-          ctx: ctxRef.current,
-          imgStore: imgStore.current,
-          imgsData: imgsData,
-        });
-        break;
+    // if (!child.absoluteRenderBounds) {
+    //   return;
+    // }
+    // const { type } = child;
+    // switch (type) {
+    //   case "RECTANGLE":
+    //     drawRectangle({
+    //       child,
+    //       ctx: ctxRef.current,
+    //       imgStore: imgStore.current,
+    //       imgsData: imgsData,
+    //     });
+    //     break;
 
-      case "FRAME":
-        if (child.fills.length > 0 && child.fills[0].color) {
-          const { x, y } = child.absoluteRenderBounds;
-          ctxRef.current.fillStyle = "rgb(77,77,77)";
-          ctxRef.current.fillText(child.name, x, y - 110);
+    //   case "TEXT":
+    //     drawText({
+    //       child,
+    //       ctx: ctxRef.current,
+    //       imgStore: imgStore.current,
+    //       imgsData: imgsData,
+    //     });
+    //     break;
 
-          drawRectangle({
-            child,
-            ctx: ctxRef.current,
-            imgStore: imgStore.current,
-            imgsData: imgsData,
-          });
-        }
-        break;
+    //   case "FRAME":
+    //     if (child.fills.length > 0 && child.fills[0].color) {
+    //       const { x, y } = child.absoluteRenderBounds;
+    //       ctxRef.current.fillStyle = "rgb(77,77,77)";
+    //       ctxRef.current.fillText(child.name, x, y - 110);
 
-      case "ELLIPSE":
-        drawEllipse({
-          ctx: ctxRef.current,
-          child,
-          imgStore: imgStore.current,
-          imgsData: imgsData,
-        });
-        break;
+    //       drawRectangle({
+    //         child,
+    //         ctx: ctxRef.current,
+    //         imgStore: imgStore.current,
+    //         imgsData: imgsData,
+    //       });
+    //     }
+    //     break;
 
-      case "GROUP":
-        if (
-          child.fills.length > 0 &&
-          child.fills[0].color &&
-          child.absoluteRenderBounds
-        ) {
-          drawRectangle({
-            child,
-            ctx: ctxRef.current,
-            imgStore: imgStore.current,
-            imgsData: imgsData,
-          });
-        }
-        break;
+    //   case "ELLIPSE":
+    //     drawEllipse({
+    //       ctx: ctxRef.current,
+    //       child,
+    //       imgStore: imgStore.current,
+    //       imgsData: imgsData,
+    //     });
+    //     break;
 
-      case "SECTION":
-        if (child.fills.length > 0 && child.fills[0].color) {
-          drawRectangle({
-            child,
-            ctx: ctxRef.current,
-            imgStore: imgStore.current,
-            imgsData: imgsData,
-          });
-        }
-        break;
+    //   case "GROUP":
+    //     if (
+    //       child.fills.length > 0 &&
+    //       child.fills[0].color &&
+    //       child.absoluteRenderBounds
+    //     ) {
+    //       drawRectangle({
+    //         child,
+    //         ctx: ctxRef.current,
+    //         imgStore: imgStore.current,
+    //         imgsData: imgsData,
+    //       });
+    //     }
+    //     break;
 
-      case "VECTOR":
-        break;
+    //   case "SECTION":
+    //     if (child.fills.length > 0 && child.fills[0].color) {
+    //       drawRectangle({
+    //         child,
+    //         ctx: ctxRef.current,
+    //         imgStore: imgStore.current,
+    //         imgsData: imgsData,
+    //       });
+    //     }
+    //     break;
 
-      default:
-        break;
-    }
-    if (child.children && child.absoluteRenderBounds) {
-      child.children.forEach(drawFigure);
-    }
+    //   case "VECTOR":
+    //     break;
+
+    //   default:
+    //     break;
+    // }
+    // if (child.children && child.absoluteRenderBounds) {
+    //   child.children.forEach(drawFigure);
+    // }
   };
 
   const drawStart = () => {
