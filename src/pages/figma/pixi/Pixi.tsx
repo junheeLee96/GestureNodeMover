@@ -1,26 +1,77 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  createContext,
-  useContext,
-} from "react";
-import * as PIXI from "pixi.js";
-import { Stage, Container, Graphics } from "@pixi/react";
+import React, { useRef, useEffect, useState } from "react";
+import { Stage, Container } from "@pixi/react";
 import Child from "./Child";
-import { ImgsDataCtx } from "../Figma";
+import * as PIXI from "pixi.js";
 
-interface DrawFigureContextType {
-  drawFigure: (g: PIXI.Graphics, child: any) => void;
-}
-
-// 기본 값을 null로 설정
-export const drawFigureCtx = createContext<DrawFigureContextType | null>(null);
-
-const Pixi = ({ data, imgsData }: any) => {
+const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
   const canvasRef = useRef<HTMLDivElement>(null);
-
   const viewportRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
+
+  const [updatedData, setUpdatedData] = useState(data);
+  const draggingNodeRef = useRef<any>(null);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+
+  const handleShapeMove = (dx: number, dy: number) => {
+    if (!draggingNodeRef.current) return;
+
+    const updateNodePosition = (node: any) => {
+      if (!node || !node.absoluteRenderBounds) return;
+      node.absoluteRenderBounds.x += dx;
+      node.absoluteRenderBounds.y += dy;
+      if (node.children) {
+        node.children.forEach(updateNodePosition);
+      }
+    };
+
+    const newData = { ...updatedData };
+    const traverseAndUpdate = (nodes: any[]) => {
+      nodes.forEach((node) => {
+        if (node.id === draggingNodeRef.current.id) {
+          updateNodePosition(node);
+        } else if (node.children) {
+          traverseAndUpdate(node.children);
+        }
+      });
+    };
+
+    traverseAndUpdate(newData.children);
+    setUpdatedData(newData);
+  };
+  const handleNodeDragStart = (child: any, event: any) => {
+    console.log(dataObj[dataSet[child.id]]);
+    draggingNodeRef.current = dataObj[dataSet[child.id]];
+    dragStartRef.current = { x: event.data.global.x, y: event.data.global.y };
+  };
+
+  const findParentNode = (node: any) => {
+    let currentNode = node;
+    while (currentNode.parent) {
+      if (
+        ["FRAME", "GROUP", "SECTION", "INSTANCE"].includes(
+          currentNode.parent.type
+        )
+      ) {
+        return currentNode.parent;
+      }
+      currentNode = currentNode.parent;
+    }
+    return null;
+  };
+
+  const handlePointerMove = (event: any) => {
+    if (!draggingNodeRef.current) return;
+
+    const dx = event.data.global.x - dragStartRef.current.x;
+    const dy = event.data.global.y - dragStartRef.current.y;
+
+    dragStartRef.current = { x: event.data.global.x, y: event.data.global.y };
+
+    handleShapeMove(dx, dy);
+  };
+
+  const handlePointerUp = () => {
+    draggingNodeRef.current = null;
+  };
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -48,18 +99,14 @@ const Pixi = ({ data, imgsData }: any) => {
     };
   }, []);
 
-  const drawSquare = (g: PIXI.Graphics) => {
-    g.clear();
-    g.beginFill(0xde3249);
-    g.drawRect(0, 0, 100, 100);
-    g.endFill();
-  };
-  const drawSquare2 = (g: PIXI.Graphics) => {
-    g.clear();
-    g.beginFill("red");
-    g.drawRect(100, 100, 100, 100);
-    g.endFill();
-  };
+  useEffect(() => {
+    if (viewportRef.current) {
+      viewportRef.current.interactive = true;
+      viewportRef.current.on("pointermove", handlePointerMove);
+      viewportRef.current.on("pointerup", handlePointerUp);
+      viewportRef.current.on("pointerupoutside", handlePointerUp);
+    }
+  }, []);
 
   return (
     <div ref={canvasRef} style={{ width: "100vw", height: "100vh" }}>
@@ -68,21 +115,19 @@ const Pixi = ({ data, imgsData }: any) => {
         height={window.innerHeight}
         options={{
           backgroundColor: data.backgroundColor
-            ? `rgba(${data.backgroundColor.r * 255} ,${
+            ? `rgba(${data.backgroundColor.r * 255}, ${
                 data.backgroundColor.g * 255
-              } ,${data.backgroundColor.b * 255} ,${data.backgroundColor.a})`
+              }, ${data.backgroundColor.b * 255}, ${data.backgroundColor.a})`
             : "#FFFF",
         }}
       >
         <Container ref={viewportRef}>
-          {data.children.map((child: any, idx: number) => (
+          {updatedData.children.map((child: any, idx: number) => (
             <Child
               child={child}
               key={idx}
               imgsData={imgsData}
-              backgroundColor={`rgba(${data.backgroundColor.r * 255} ,${
-                data.backgroundColor.g * 255
-              } ,${data.backgroundColor.b * 255} ,${data.backgroundColor.a})`}
+              onDragStart={handleNodeDragStart}
             />
           ))}
         </Container>

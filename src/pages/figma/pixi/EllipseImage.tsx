@@ -1,17 +1,27 @@
 // EllipseImage.js
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Sprite, Graphics } from "@pixi/react";
 import * as PIXI from "pixi.js";
 
 const EllipseImage = ({ imageUrl, x, y, width, height }: any) => {
+  const [texture, setTexture] = useState<any>(null);
   const spriteRef = useRef<any>(null);
   const maskRef = useRef<any>(null);
 
   useEffect(() => {
-    if (spriteRef.current && maskRef.current) {
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // crossOrigin 속성 설정
+    img.src = imageUrl;
+    img.onload = () => {
+      const texture = PIXI.Texture.from(img);
+      setTexture(texture);
+    };
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (spriteRef.current && maskRef.current && texture) {
       spriteRef.current.mask = maskRef.current;
 
-      const texture = PIXI.Texture.from(imageUrl);
       const textureRatio = texture.width / texture.height;
       const ellipseRatio = width / height;
 
@@ -22,13 +32,12 @@ const EllipseImage = ({ imageUrl, x, y, width, height }: any) => {
         scale = width / texture.width;
       }
 
-      spriteRef.current.texture = texture;
       spriteRef.current.scale.set(scale);
       spriteRef.current.x = x + width / 2;
       spriteRef.current.y = y + height / 2;
       spriteRef.current.anchor.set(0.5, 0.5);
     }
-  }, [imageUrl, x, y, width, height]);
+  }, [texture, x, y]);
 
   return (
     <>
@@ -41,13 +50,15 @@ const EllipseImage = ({ imageUrl, x, y, width, height }: any) => {
           g.endFill();
         }}
       />
-      <Sprite
-        ref={spriteRef}
-        image={imageUrl}
-        anchor={0.5}
-        x={x + width / 2}
-        y={y + height / 2}
-      />
+      {texture && (
+        <Sprite
+          ref={spriteRef}
+          texture={texture}
+          anchor={0.5}
+          x={x + width / 2}
+          y={y + height / 2}
+        />
+      )}
     </>
   );
 };

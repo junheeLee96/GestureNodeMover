@@ -15,7 +15,8 @@ const token = {
 
 let imgsData = null;
 let figmaData = null;
-const fileKey = "jQFVzHVxQU8N2yLoLscuFq";
+const fileKey = "SuluaS192SLm7iAxHf4QX3";
+// const fileKey = "phUTi5k6RHHuKbE0ZQ2mYv";
 
 const getImgs = async () => {
   const response = await axios.get(

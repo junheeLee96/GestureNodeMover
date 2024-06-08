@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { userToken } from "../../App";
 import {
@@ -14,6 +14,20 @@ import { Info_figma, Info_img } from "./Figmadata";
 // import { Canvas } from "@react-three/fiber";
 // import { getFile, getImgs, getNodes } from "../../utils/fetchAPI";
 
+const parentTypes = ["FRAME", "GROUP", "COMPONENT", "INSTANCE"];
+const childTypes = [
+  "FRAME",
+  "BOOLEAN_OPERATION",
+  "VECTOR",
+  "STAR",
+  "LINE",
+  "ELLIPSE",
+  "REGULAR_POLYGON",
+  "TEXT",
+  "SLICE",
+  "STICKY",
+];
+
 interface ImgsDataCtxType {
   imgsData: any; // imgsData의 실제 타입으로 변경하세요
   setImgsData: React.SetStateAction<any>;
@@ -26,6 +40,9 @@ const Figma = () => {
   const params = useParams();
 
   const [data, setData] = useState<GetFileResult | null>(null);
+  const [dataSet, setDataSet] = useState<any>({});
+  const dataSetRef = useRef<any>({});
+  const dataObj = useRef({});
   const [imgsData, setImgsData] = useState<null | GetImageResult>(null);
   const getFile = async () => {
     let user = localStorage.getItem("token");
@@ -73,6 +90,7 @@ const Figma = () => {
       const [file, imgs]: any = await Promise.all([getFile(), getImgs()]);
       console.log(JSON.stringify(imgs.data.meta.images));
       console.log(imgs);
+
       // return;
       setData(file.data);
       setImgsData(imgs.data.meta.images);
@@ -81,11 +99,40 @@ const Figma = () => {
     }
   };
 
+  const updateDataSet = (child: any, parentId: any) => {
+    let pId = parentId;
+    dataObj.current = { ...dataObj.current, [child.id]: child };
+
+    if (parentTypes.includes(child.type)) {
+      pId = child.id;
+    } else {
+      dataSetRef.current = { ...dataSetRef.current, [child.id]: pId };
+    }
+
+    if (child.children) {
+      child.children.forEach((c: any) => updateDataSet(c, pId));
+    }
+  };
+
   useEffect(() => {
     const key = params.fileKey;
-    console.log(key);
     const figmaInfo: any = Info_figma;
     const imgData = Info_img;
+    (async () => {
+      const data = await axios.get("http://localhost:8080/get_infos");
+      // console.log(data.data.data.images.meta);
+
+      updateDataSet(
+        data.data.data.figma.document.children[0],
+        data.data.data.figma.document.children[0].id
+      );
+      setDataSet(dataSetRef.current);
+      // return;
+      setData(data.data.data.figma);
+      setImgsData(data.data.data.images.meta.images);
+    })();
+
+    return;
     setTimeout(() => {
       setImgsData(imgData);
       setData(figmaInfo);
@@ -96,8 +143,9 @@ const Figma = () => {
   }, []);
 
   useEffect(() => {
-    console.log(imgsData);
-  }, [imgsData]);
+    console.log(dataSet);
+  }, [dataSet]);
+
   return (
     <div style={{ width: "100dvw", height: "100dvh", overflow: "hidden" }}>
       <ImgsDataCtx.Provider
@@ -106,25 +154,17 @@ const Figma = () => {
           setImgsData,
         }}
       >
-        {/* <Child num={3} /> */}
         {data && data.document.children.length > 0 && imgsData && (
-          <Pixi data={data.document.children[0]} imgsData={imgsData} />
+          <Pixi
+            data={data.document.children[0]}
+            imgsData={imgsData}
+            dataObj={dataObj.current}
+            dataSet={dataSet}
+          />
         )}
-        {/* <WebGL /> */}
-        {/* <Three /> */}
-        {/* {data && <Canvas data={data} imgsData={imgsData} />} */}
       </ImgsDataCtx.Provider>
     </div>
   );
 };
 
 export default Figma;
-
-// const Child = ({ num }: { num: number }) => {
-//   return (
-//     <div>
-//       NUM : {num}
-//       {num > 0 ? <Child num={num - 1} /> : null}
-//     </div>
-//   );
-// };
