@@ -5,7 +5,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@mediapipe/tasks-vision": "^0.10.13",
+    "@mediapipe/tasks-vision": "^0.10.14",
     "@pixi/react": "^7.1.2",
     "@react-three/drei": "^9.105.6",
     "@react-three/fiber": "^8.16.6",
@@ -30,7 +30,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "webpack",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -53,6 +53,10 @@
     ]
   },
   "devDependencies": {
-    "@figma/rest-api-spec": "^0.13.0"
+    "@figma/rest-api-spec": "^0.13.0",
+    "raw-loader": "^4.0.2",
+    "ts-loader": "^9.5.1",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
   }
 }

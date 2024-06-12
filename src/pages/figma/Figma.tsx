@@ -11,6 +11,7 @@ import WebGL from "./webGL/WebGL";
 import Three from "./webGL/Three";
 import Pixi from "./pixi/Pixi";
 import { Info_figma, Info_img } from "./Figmadata";
+import Gesture from "../../components/gesture/Gesture";
 // import { Canvas } from "@react-three/fiber";
 // import { getFile, getImgs, getNodes } from "../../utils/fetchAPI";
 
@@ -162,6 +163,7 @@ const Figma = () => {
             dataSet={dataSet}
           />
         )}
+        <Gesture />
       </ImgsDataCtx.Provider>
     </div>
   );
