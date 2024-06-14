@@ -3,20 +3,24 @@ import { Stage, Container, Graphics } from "@pixi/react";
 import * as PIXI from "pixi.js";
 import Child from "./Child";
 
-const Pixi = ({ data, imgsData }: any) => {
+const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
   const [updatedData, setUpdatedData] = useState(data);
-  const [virtualMousePosition, setVirtualMousePosition] = useState({
-    x: 300,
-    y: 300,
+  const virtualMousePositionRef = useRef({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
   }); // 가상 마우스 위치
+  const viewportOffsetRef = useRef({ x: 0, y: 0 });
 
   const draggingNodeRef = useRef<any>(null);
   const dragStartRef = useRef({ x: 0, y: 0 });
+  const virtualMouseGraphicsRef = useRef<PIXI.Graphics>(null);
+  const selectedNodeRef = useRef<any>(null);
+  const gestureStateRef = useRef<string>("");
 
-  const handleShapeMove = (dx: number, dy: number) => {
-    if (!draggingNodeRef.current) return;
+  const handleShapeMove = (node: any, dx: number, dy: number) => {
+    if (!node) return;
 
     const updateNodePosition = (node: any) => {
       if (!node || !node.absoluteRenderBounds) return;
@@ -29,11 +33,11 @@ const Pixi = ({ data, imgsData }: any) => {
 
     const newData = { ...updatedData };
     const traverseAndUpdate = (nodes: any[]) => {
-      nodes.forEach((node) => {
-        if (node.id === draggingNodeRef.current.id) {
-          updateNodePosition(node);
-        } else if (node.children) {
-          traverseAndUpdate(node.children);
+      nodes.forEach((childNode) => {
+        if (childNode.id === node.id) {
+          updateNodePosition(childNode);
+        } else if (childNode.children) {
+          traverseAndUpdate(childNode.children);
         }
       });
     };
@@ -43,30 +47,101 @@ const Pixi = ({ data, imgsData }: any) => {
   };
 
   const handlePointerMove = (event: any) => {
-    if (!draggingNodeRef.current) return;
+    if (!draggingNodeRef.current || !viewportRef.current) return;
 
     const dx = event.data.global.x - dragStartRef.current.x;
     const dy = event.data.global.y - dragStartRef.current.y;
 
     dragStartRef.current = { x: event.data.global.x, y: event.data.global.y };
 
-    handleShapeMove(dx, dy);
+    handleShapeMove(draggingNodeRef.current, dx, dy);
   };
 
   const handlePointerUp = () => {
     draggingNodeRef.current = null;
+    selectedNodeRef.current = null;
   };
 
   const GestureEventListener = (e: any) => {
     const gestureData = e.detail;
+    const landmark = gestureData.landmarks[0][8]; // 예: 집게 손가락 끝의 랜드마크
+    const newVirtualMousePosition = {
+      x: landmark.x * window.innerWidth,
+      y: landmark.y * window.innerHeight,
+    };
+
     if (gestureData.gestures[0][0].categoryName === "move") {
-      const landmark = gestureData.landmarks[0][8]; // 예: 집게 손가락 끝의 랜드마크
-      const newVirtualMousePosition = {
-        x: landmark.x * window.innerWidth,
-        y: landmark.y * window.innerHeight,
-      };
-      setVirtualMousePosition(newVirtualMousePosition);
+      virtualMousePositionRef.current = newVirtualMousePosition;
+      gestureStateRef.current = "move";
+      updateVirtualMouseGraphics(); // 가상 커서 위치 업데이트
+    } else if (gestureData.gestures[0][0].categoryName === "pick") {
+      if (!viewportRef.current) return;
+      const pickedNode = findNodeAtPosition(
+        (newVirtualMousePosition.x - viewportRef.current.position.x) /
+          viewportRef.current.scale.x,
+        (newVirtualMousePosition.y - viewportRef.current.position.y) /
+          viewportRef.current.scale.y
+      );
+      if (pickedNode) {
+        selectedNodeRef.current = pickedNode;
+      }
+
+      gestureStateRef.current = "pick";
     }
+
+    if (gestureStateRef.current === "pick" && selectedNodeRef.current) {
+      const dx = newVirtualMousePosition.x - virtualMousePositionRef.current.x;
+      const dy = newVirtualMousePosition.y - virtualMousePositionRef.current.y;
+      handleShapeMove(selectedNodeRef.current, dx, dy);
+    }
+
+    virtualMousePositionRef.current = newVirtualMousePosition;
+    updateVirtualMouseGraphics(); // 가상 커서 위치 업데이트
+  };
+
+  const updateVirtualMouseGraphics = () => {
+    if (!virtualMouseGraphicsRef.current || !viewportRef.current) return;
+    const g = virtualMouseGraphicsRef.current;
+    g.clear();
+    g.lineStyle(2 / viewportRef.current.scale.x, 0xff0000); // 스케일에 따라 선 두께 조정
+    g.drawCircle(
+      (virtualMousePositionRef.current.x - viewportRef.current.position.x) /
+        viewportRef.current.scale.x,
+      (virtualMousePositionRef.current.y - viewportRef.current.position.y) /
+        viewportRef.current.scale.y,
+      5 / viewportRef.current.scale.x // 스케일에 따라 반지름 조정
+    );
+  };
+
+  const findNodeAtPosition = (x: number, y: number) => {
+    const checkNode = (node: any, parentX = 0, parentY = 0): any => {
+      if (!node.absoluteRenderBounds) return null;
+      const { x: nodeX, y: nodeY, width, height } = node.absoluteRenderBounds;
+      const absoluteX = nodeX + parentX;
+      const absoluteY = nodeY + parentY;
+
+      if (
+        x >= absoluteX &&
+        x <= absoluteX + width &&
+        y >= absoluteY &&
+        y <= absoluteY + height
+      ) {
+        return node;
+      }
+      if (node.children) {
+        for (let i = 0; i < node.children.length; i++) {
+          const found = checkNode(node.children[i], absoluteX, absoluteY);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    for (let i = 0; i < updatedData.children.length; i++) {
+      const found = checkNode(updatedData.children[i]);
+      if (found) return found;
+    }
+    return null;
   };
 
   useEffect(() => {
@@ -83,16 +158,13 @@ const Pixi = ({ data, imgsData }: any) => {
         viewportRef.current.position.y -= e.deltaY;
       }
 
-      // 가상의 마우스 위치 업데이트
-      const newVirtualMousePosition = {
-        x:
-          (window.innerWidth / 2 - viewportRef.current.position.x) /
-          viewportRef.current.scale.x,
-        y:
-          (window.innerHeight / 2 - viewportRef.current.position.y) /
-          viewportRef.current.scale.y,
+      // 뷰포트 오프셋 업데이트
+      viewportOffsetRef.current = {
+        x: viewportRef.current.position.x,
+        y: viewportRef.current.position.y,
       };
-      setVirtualMousePosition(newVirtualMousePosition);
+
+      updateVirtualMouseGraphics(); // 줌/이동 시 가상 커서 업데이트
     };
 
     const canvas = canvasRef.current;
@@ -160,20 +232,7 @@ const Pixi = ({ data, imgsData }: any) => {
               onDragStart={handleNodeDragStart}
             />
           ))}
-          <Graphics
-            draw={(g) => {
-              g.clear();
-              g.lineStyle(
-                2 / (viewportRef.current ? viewportRef.current.scale.x : 1),
-                0xff0000
-              ); // 스케일에 따라 선 두께 조정
-              g.drawCircle(
-                virtualMousePosition.x,
-                virtualMousePosition.y,
-                5 / (viewportRef.current ? viewportRef.current.scale.x : 1) // 스케일에 따라 반지름 조정
-              );
-            }}
-          />
+          <Graphics ref={virtualMouseGraphicsRef} />
         </Container>
       </Stage>
     </div>
