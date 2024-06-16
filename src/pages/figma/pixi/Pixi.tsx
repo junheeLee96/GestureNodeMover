@@ -10,7 +10,7 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
   const virtualMousePositionRef = useRef({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
-  }); // 가상 마우스 위치
+  });
   const viewportOffsetRef = useRef({ x: 0, y: 0 });
 
   const draggingNodeRef = useRef<any>(null);
@@ -19,6 +19,7 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
   const selectedNodeRef = useRef<any>(null);
   const gestureStateRef = useRef<string>("");
 
+  // 노드의 위치를 업데이트하는 함수
   const handleShapeMove = (node: any, dx: number, dy: number) => {
     if (!node) return;
 
@@ -46,6 +47,7 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     setUpdatedData(newData);
   };
 
+  // 마우스 드래그 중 노드의 위치를 업데이트
   const handlePointerMove = (event: any) => {
     if (!draggingNodeRef.current || !viewportRef.current) return;
 
@@ -53,15 +55,16 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     const dy = event.data.global.y - dragStartRef.current.y;
 
     dragStartRef.current = { x: event.data.global.x, y: event.data.global.y };
-
     handleShapeMove(draggingNodeRef.current, dx, dy);
   };
 
+  // 드래그 종료 시 처리
   const handlePointerUp = () => {
     draggingNodeRef.current = null;
     selectedNodeRef.current = null;
   };
 
+  // 제스처 이벤트 리스너
   const GestureEventListener = (e: any) => {
     const gestureData = e.detail;
     const landmark = gestureData.landmarks[0][8]; // 예: 집게 손가락 끝의 랜드마크
@@ -73,7 +76,7 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     if (gestureData.gestures[0][0].categoryName === "move") {
       virtualMousePositionRef.current = newVirtualMousePosition;
       gestureStateRef.current = "move";
-      updateVirtualMouseGraphics(); // 가상 커서 위치 업데이트
+      updateVirtualMouseGraphics();
     } else if (gestureData.gestures[0][0].categoryName === "pick") {
       if (!viewportRef.current) return;
       const pickedNode = findNodeAtPosition(
@@ -85,7 +88,6 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
       if (pickedNode) {
         selectedNodeRef.current = pickedNode;
       }
-
       gestureStateRef.current = "pick";
     }
 
@@ -96,23 +98,25 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     }
 
     virtualMousePositionRef.current = newVirtualMousePosition;
-    updateVirtualMouseGraphics(); // 가상 커서 위치 업데이트
+    updateVirtualMouseGraphics();
   };
 
+  // 가상 마우스 그래픽 업데이트
   const updateVirtualMouseGraphics = () => {
     if (!virtualMouseGraphicsRef.current || !viewportRef.current) return;
     const g = virtualMouseGraphicsRef.current;
     g.clear();
-    g.lineStyle(2 / viewportRef.current.scale.x, 0xff0000); // 스케일에 따라 선 두께 조정
+    g.lineStyle(2 / viewportRef.current.scale.x, 0xff0000);
     g.drawCircle(
       (virtualMousePositionRef.current.x - viewportRef.current.position.x) /
         viewportRef.current.scale.x,
       (virtualMousePositionRef.current.y - viewportRef.current.position.y) /
         viewportRef.current.scale.y,
-      5 / viewportRef.current.scale.x // 스케일에 따라 반지름 조정
+      5 / viewportRef.current.scale.x
     );
   };
 
+  // 특정 위치에서 노드를 찾는 함수
   const findNodeAtPosition = (x: number, y: number) => {
     const checkNode = (node: any, parentX = 0, parentY = 0): any => {
       if (!node.absoluteRenderBounds) return null;
@@ -144,6 +148,7 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     return null;
   };
 
+  // 마우스 휠 이벤트 핸들러
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -158,13 +163,12 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
         viewportRef.current.position.y -= e.deltaY;
       }
 
-      // 뷰포트 오프셋 업데이트
       viewportOffsetRef.current = {
         x: viewportRef.current.position.x,
         y: viewportRef.current.position.y,
       };
 
-      updateVirtualMouseGraphics(); // 줌/이동 시 가상 커서 업데이트
+      updateVirtualMouseGraphics();
     };
 
     const canvas = canvasRef.current;
@@ -181,6 +185,7 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     };
   }, []);
 
+  // 뷰포트의 포인터 이벤트 핸들러 설정
   useEffect(() => {
     if (viewportRef.current) {
       viewportRef.current.interactive = true;
@@ -190,11 +195,13 @@ const Pixi = ({ data, imgsData, dataObj, dataSet }: any) => {
     }
   }, []);
 
+  // 노드 드래그 시작 핸들러
   const handleNodeDragStart = (child: any, event: any) => {
     draggingNodeRef.current = findParentNode(child) || child;
     dragStartRef.current = { x: event.data.global.x, y: event.data.global.y };
   };
 
+  // 상위 노드를 찾는 함수
   const findParentNode = (node: any) => {
     let currentNode = node;
     while (currentNode.parent) {

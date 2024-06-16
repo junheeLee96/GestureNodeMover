@@ -19,6 +19,7 @@ const Child = React.memo(({ child, imgsData, onDragStart }: any) => {
   const ref = useRef(null);
   const graphicsRef = useRef<any>(null);
 
+  // 노드 드래그 시작 핸들러
   const handlePointerDown = (event: any) => {
     onDragStart(child, event);
   };
@@ -32,6 +33,7 @@ const Child = React.memo(({ child, imgsData, onDragStart }: any) => {
     }
   }, [child, onDragStart]);
 
+  // 그래픽을 그리는 함수
   const drawGraphics = (g: any, child: any) => {
     if (!child || !child.absoluteRenderBounds) return;
 
